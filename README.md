@@ -63,11 +63,17 @@ See [INVESTIGATION.md](INVESTIGATION.md) for details and [TEST_PLAN.md](TEST_PLA
 - Documenting observations, hypotheses, tests and limitations
 - Considering the reliability and privacy of assistants with access to desktop tools
 
+## Source comparison now completed
+
+I compared the submitted `main.py` and `ui.py` against a public [MARK XXXIX reference snapshot](https://github.com/FatihMakes/Mark-XXXIX-OR). The comparison documents **transcription cleanup**, **end-of-turn playback state handling**, additional interface/tool changes, and **remaining unresolved risks** involving session resumption and queue pressure.
+
+**Read the [detailed source comparison](SOURCE_COMPARISON.md).** The differences are real differences between the available files, but without original edit history they do not establish who authored each change, and they do not prove the reported crashes have stopped.
+
 ## Evidence I still need to add
 
 - [ ] A redacted screenshot or example of the original problem
 - [ ] Names of the exact files/functions **I personally modified**
-- [ ] Before/after snippets or a diff of those changes
+- [x] Comparison against a publicly available reference snapshot — see [SOURCE_COMPARISON.md](SOURCE_COMPARISON.md) (authorship still unverified)
 - [ ] Results of repeated voice-interaction tests
 - [ ] Confirmation of what improved and what still needs fixing
 
