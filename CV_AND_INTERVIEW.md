@@ -10,6 +10,16 @@
 
 > Use only the first two bullets if CV space is tight. These statements reflect the reported experience and code examined, but they do not claim independently verified fixes.
 
+## Specific verified analysis from the source comparison
+
+The files supplied for review include a new transcript-cleaning function and an event-based audio-playback completion mechanism, compared with a public reference snapshot. Both are documented in [SOURCE_COMPARISON.md](SOURCE_COMPARISON.md).
+
+**Accurate technical analysis bullet (can be used in a portfolio):**
+
+- Compared Python voice-assistant source snapshots, identifying transcript sanitisation and asynchronous playback-state handling changes while documenting unresolved session-resumption and queue-backpressure risks.
+
+**Authorship caution:** Do not replace “compared” or “identified” with “implemented” until there is evidence establishing those edits were personally made. No verified runtime performance claim is yet supported.
+
 ## Example interview answer (editable, not a script to memorise)
 
 "I like to learn by reading open-source Python projects. When I tested a voice assistant, I noticed that some interactions interrupted the conversation and other sessions became unstable. Rather than treating it just as a user-interface problem, I examined its audio streaming, queue handling and session logic. I explored changes to make it more robust, and then learned why it's important to distinguish a plausible cause from a proven fix. My next step is to document my actual edits and run controlled before-and-after tests."
