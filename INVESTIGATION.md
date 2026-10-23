@@ -1,21 +1,20 @@
-# Investigation notes — source review and reproducible hypotheses
+# Technical investigation — voice reliability and asynchronous processing
 
-This document distinguishes **user observations**, **source-code findings**, and **untested hypotheses**. Line numbers refer to the version of `main.py` and `ui.py` shared for review; they may change in later commits or upstream releases.
+This analysis traces user-reported reliability symptoms to relevant areas of a Python voice-assistant codebase. Approximate line references refer to the inspected `main.py` and `ui.py` snapshots.
 
-## Reported symptoms (from my testing)
+## Reported symptoms
 
 ### Issue 1: Voice interaction loses conversational continuity
 
 - **Observed:** After a spoken input, an audible signal sometimes occurred; afterwards I had to repeat earlier information for the conversation to continue.
-- **Not yet known:** Whether the UI transcript itself disappeared, whether the model's short-term conversational context was lost, or both.
-- **Do not infer:** The sound alone does not establish whether the API disconnected, the GUI reset, or an audio-processing error occurred.
+- **Technical distinction:** UI transcript rendering and model conversational context are separate layers. An audible signal does not independently establish a reconnection or reset.
 
 ### Issue 2: Crashes during demanding activity
 
 - **Observed:** Under heavier workloads, the program sometimes crashed or stopped responding.
-- **Not yet known:** Exact exceptions, memory utilisation, CPU utilisation, audio device status, or whether an API service limit was involved.
+- **Technical distinction:** Queue pressure, playback backlog, API disconnections and UI responsiveness each require separate assessment; the reported symptom alone does not identify a single cause.
 
-## Evidence from the uploaded source
+## Source-level findings
 
 | File and approximate lines | Directly visible behaviour | Reason to investigate |
 | --- | --- | --- |
@@ -27,42 +26,18 @@ This document distinguishes **user observations**, **source-code findings**, and
 | `main.py` ~762–774 | Transcription fragments are displayed at `turn_complete`, then cleared | Incomplete fragments need careful handling on errors |
 | `ui.py` ~593–640 | UI log has a queued, character-by-character rendering implementation | Distinguish rendering backlog from conversation context |
 
-### Potential direction 1: Session resumption
+### Session resumption
 
-Official Gemini Live API documentation describes retaining `session_resumption_update.new_handle` and passing that handle to a subsequent connection. The uploaded `main.py` requests session resumption but does not visibly implement that retained-handle flow. The code could therefore fail to retain conversation state after certain reconnects. **This is a hypothesis until validated against actual failure logs.**
+Official Gemini Live API documentation describes retaining `session_resumption_update.new_handle` and passing that handle to a subsequent connection. The uploaded `main.py` requests session resumption but does not visibly implement that retained-handle flow. A subsequent connection may therefore start without retained session context. This is a source-level risk, rather than a confirmed explanation of each observed reset.
 
-**Investigation checklist:**
-- Observe a non-sensitive session boundary and whether a reconnect event occurred.
-- Record whether the service supplied a resumable handle, without publishing the handle itself.
-- Test whether a resumed session recalls a harmless prior fact, with and without a reconnect.
-- Record limitations such as expired resumption handles.
+### Audio queue backpressure
 
-### Potential direction 2: Audio queue backpressure
+A microphone produces samples continuously, while the send operation depends on the network and remote service. With `out_queue = asyncio.Queue(maxsize=10)` and a scheduled `put_nowait`, slow consumption can fill the queue. A full bounded queue raises `asyncio.QueueFull` when written to with `put_nowait()`. The source presents a possible exception path; the reported crashes have not been tied to a recorded `QueueFull` event.
 
-A microphone produces samples continuously, while the send operation depends on the network and remote service. With `out_queue = asyncio.Queue(maxsize=10)` and a scheduled `put_nowait`, slow consumption can fill the queue. The queue is small enough that this possibility warrants examination. It is **not** evidence that the queue actually overflowed during the reported crashes.
-
-**Investigation checklist:**
-- Record `QueueFull` occurrences, drop counts and queue high-water mark without recording microphone audio.
-- Check whether the producer is allowed to outpace the consumer under simulated slow network conditions.
-- Explore a deliberate overflow policy in a test environment rather than silently accepting failures.
-- Check that callbacks never block or perform slow disk/network operations.
-
-### Potential direction 3: Transcript rendering versus conversational memory
+### Transcript rendering versus conversational memory
 
 The receive code buffers transcribed fragments and writes completed turns to the interface. That is separate from the AI provider's conversation state. During a disconnection, either or both may be affected. The phrase **"transcript reset"** is therefore tracked as an observation, not a proven root cause.
 
-## Evidence needed before saying I fixed the problems
-
-| Question | Answer / link to proof |
-| --- | --- |
-| Which original version or commit did I test? | **TO ADD** |
-| Which files did I change personally? | **TO ADD** |
-| What were the exact changes? | **TO ADD** |
-| What were the error messages? | **TO ADD — redact sensitive data** |
-| How many test runs before and after? | **TO ADD** |
-| Did context loss stop or merely become less frequent? | **TO ADD** |
-| Did crashes stop or merely become less frequent? | **TO ADD** |
-
 ## Scope and attribution
 
-The program's original source, its features and user interface were created by the upstream developer. This document records an independent investigation, not authorship of the full voice assistant. It is not a verified security vulnerability report or penetration-test finding.
+The original application and user interface are credited to FatihMakes. This is a technical source-review case study, not a claim of having developed the full assistant or discovered an exploitable security vulnerability.
